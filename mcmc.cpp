@@ -39,63 +39,72 @@ double prod(std::vector<double> vec)
 }
 
 
-// void sampler(std::vector<double> dats, int samples, double mu_init)
+// Fix for sigma
+// double fracBetween(std::vector<double> stats)
 // {
-//   double mu_current = mu_init, likelihood_current, likelihood_proposal;
-//   std::vector<double> posterior = {mu_current};
-//
-//   for(int i = 0; i < samples; i++)
+//   for(int i = 0; i < stats.size(); i++)
 //   {
-//     // Suggest new position - norm().rvs()
-//     mu_proposal = 1.;
-//
-//     // Compute likelihood by multiplying probabilities of each data point
-//     // norm().pdf().prod()
-//     likelihood_current = prod(pdfList(mu_current, 1., dats));
-//     likelihood_proposal = prod(pdfList(mu_proposal, 1., dats));
-//
-//     // Compute prior probability of current and proposed mu
-//     // norm().pdf()
-//     prior_current = gaussian(mu_prior_mu, mu_prior_sd, mu_current);
-//     prior_proposal = gaussian(mu_prior_mu, mu_prior_sd, mu_proposal);
-//
-//     p_current = likelihood_current * prior_current;
-//     p_proposal = likelihood_proposal * prior_proposal;
-//
-//     // Accept proposal?
-//     p_accept = p_proposal / p_current;
-//
-//     accept = rand() < p_accept;
-//     if(accept) mu_current = mu_proposal;
-//
-//     posterior.push_back(mu_current);
+//     int count;
+//     double number2 = stats[i];
+//     if((number2 > -1) && (number2 < 1))
+//       count ++;
 //   }
+//   return ((double) count)/ ((double) stats.size());
 // }
+
+
+std::vector<double> sampler(std::vector<double> dats, int samples, double mu_init, double proposal_width, double mu_prior_mu, double mu_prior_sd)
+{
+  double mu_current = mu_init;
+  double mu_proposal, likelihood_current, likelihood_proposal;
+  double prior_current, prior_proposal, p_current, p_proposal, p_accept, accept;
+  std::vector<double> posterior = {mu_current};
+  std::default_random_engine generator;
+
+
+  for(int i = 0; i < samples; i++)
+  {
+    // Suggest new position
+    std::normal_distribution<double> distribution(mu_current, proposal_width);
+    mu_proposal = distribution(generator);
+
+    // Compute likelihood by multiplying probabilities of each data point
+    likelihood_current = prod(pdfList(mu_current, 1., dats));
+    likelihood_proposal = prod(pdfList(mu_proposal, 1., dats));
+
+    // Compute prior probability of current and proposed mu
+    prior_current = gaussian(mu_prior_mu, mu_prior_sd, mu_current);
+    prior_proposal = gaussian(mu_prior_mu, mu_prior_sd, mu_proposal);
+
+    p_current = likelihood_current * prior_current;
+    p_proposal = likelihood_proposal * prior_proposal;
+
+    // Accept proposal?
+    p_accept = p_proposal / p_current;
+
+    accept = rand() < p_accept;
+    if(accept) mu_current = mu_proposal;
+
+    posterior.push_back(mu_current);
+  }
+
+  return posterior;
+}
 
 
 int main()
 {
   srand (time(NULL));
 
-  std::default_random_engine generator;
-  std::normal_distribution<double> distribution(5.0,2.0);
+  std::default_random_engine gen1;
+  std::normal_distribution<double> distribution(0.0, 1.0);
+  std::vector<double> data;
 
-  for (int i=0; i<15; ++i) {
-    std::cout << generator << std::endl;
-    double number = distribution(generator);
-    std::cout << number << std::endl;
+  for (int i=0; i<100; i++) {
+    data.push_back(distribution(gen1));
   }
 
-  std::vector<double> a = {-0.2, -0.1, 0.0, 0.1, 0.2};
-
-  printVector(a);
-
-  std::cout << std::accumulate(a.begin(), a.end(), 1., std::multiplies<double>()) << std::endl;
-
-  std::for_each (a.begin(), a.end(), [&](double d)
-  {
-    std::cout << gaussian(0.0, 0.5, d) << std::endl;
-  });
+  std::vector<double> post = sampler(data, 1000000, -1., .5, 0, 1);
 
   return 0;
 }
