@@ -50,17 +50,19 @@ double prod(std::vector<double> vec)
 
 
 // Fix for sigma
-// double fracBetween(std::vector<double> stats)
-// {
-//   for(int i = 0; i < stats.size(); i++)
-//   {
-//     int count;
-//     double number2 = stats[i];
-//     if((number2 > -1) && (number2 < 1))
-//       count ++;
-//   }
-//   return ((double) count)/ ((double) stats.size());
-// }
+double fracBetween(std::vector<double> stats)
+{
+  int cnt = 0;
+
+  for(int i = 0; i < stats.size(); i++)
+  {
+    double number2 = stats[i];
+    if((number2 > -1) && (number2 < 1))
+      cnt ++;
+  }
+
+  return ((double) cnt)/ ((double) stats.size());
+}
 
 
 void saveData(std::string filename, std::vector<double> & data)
@@ -82,26 +84,45 @@ std::vector<double> sampler(std::vector<double> dats, int samples, double mu_ini
 
   for(int i = 0; i < samples; i++)
   {
+    std::cout << "The iteration is: " << i << std::endl;
+
     // Suggest new position
     std::normal_distribution<double> distribution(mu_current, proposal_width);
     mu_proposal = distribution(generator);
+    // std::cout << "The mu_proposal is: " << mu_proposal << std::endl;
 
     // Compute likelihood by multiplying probabilities of each data point
     likelihood_current = prod(pdfList(mu_current, 1., dats));
+    // std::cout << "The pdflist of the mu_current data is: " << std::endl;
+    printVector(pdfList(mu_current, 1., dats));
+    // std::cout << "likelihood_current is: " << likelihood_current << std::endl;
+
     likelihood_proposal = prod(pdfList(mu_proposal, 1., dats));
+    // std::cout << "The pdflist of the mu_proposal data is: " << std::endl;
+    printVector(pdfList(mu_proposal, 1., dats));
+    // std::cout << "likelihood_proposal is: " << likelihood_proposal << std::endl;
 
     // Compute prior probability of current and proposed mu
     prior_current = gaussian(mu_prior_mu, mu_prior_sd, mu_current);
+    // std::cout << "prior_current is: " << prior_current << std::endl;
+
     prior_proposal = gaussian(mu_prior_mu, mu_prior_sd, mu_proposal);
+    // std::cout << "prior_proposal is: " << prior_proposal << std::endl;
 
     p_current = likelihood_current * prior_current;
+    // std::cout << "p_current is: " << p_current << std::endl;
+
     p_proposal = likelihood_proposal * prior_proposal;
+    // std::cout << "p_proposal is: " << p_proposal << std::endl;
 
     // Accept proposal?
     p_accept = p_proposal / p_current;
+    // std::cout << "p_accept is: " << p_accept << std::endl;
 
-    accept = rand() < p_accept;
-    if(accept) mu_current = mu_proposal;
+    // accept = ;
+    // double rand_number =
+    if((double)rand()/RAND_MAX < p_accept)
+      mu_current = mu_proposal;
 
     posterior.push_back(mu_current);
   }
@@ -109,8 +130,23 @@ std::vector<double> sampler(std::vector<double> dats, int samples, double mu_ini
   return posterior;
 }
 
+// void metropolis(int N_Thermalization_Steps)
+// {
+//   for(int i = 0; i< N_Thermalization_Steps; i++)
+//
+// }
 
-void plotCurves(std::vector<double> equity, std::string filename)
+double expectationValue(std::vector<double> vec, int m)
+{
+  return std::accumulate(vec.begin(), vec.end(), 0., std::plus<double>());
+}
+
+double measure(std::vector<double> vec, int m)
+{
+  return std::accumulate(vec.begin(), vec.end(), 0., std::plus<double>());
+}
+
+void plotCurves(std::vector<double> equity, std::string filename, std::string titleName)
 {
 // Prepare data.
 int n = equity.size();
@@ -125,30 +161,10 @@ plt::plot(x, equity, "bo");
 plt::xlim(0, n);
 
 // Add graph title
-plt::title("Equity Curve");
+plt::title(titleName);
 // Enable legend.
 plt::legend();
 // save figure
 plt::save(filename);
 // plt::show();
-}
-
-
-int main()
-{
-  srand (time(NULL));
-
-  std::default_random_engine gen1;
-  std::normal_distribution<double> distribution(0.0, 1.0);
-  std::vector<double> data;
-
-  for (int i=0; i<100; i++) {
-    data.push_back(distribution(gen1));
-  }
-
-  std::vector<double> post = sampler(data, 1000000, -1., .5, 0, 1);
-
-  saveData("Data/result.txt", post);
-
-  return 0;
 }

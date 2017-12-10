@@ -16,7 +16,7 @@ int main()
   printVector(data);
 
   std::cout << "-----------------------------------" << std::endl;
-  std::vector<double> post = sampler(data, 8000, -1., .5, 0., 1.);
+  std::vector<double> post = sampler(data, 50000, -1., 0.5, 0.0, 1.0);
 
   saveData("Data/result.txt", post);
   plotCurves(post, "post.jpg", "Trace");
